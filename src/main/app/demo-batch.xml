@@ -14,7 +14,7 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
     <http:request-config name="HTTP_Request_Configuration" host="localhost" port="2020" basePath="test" doc:name="HTTP Request Configuration"/>
     <flow name="demo-batchFlow">
         <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
-        <set-variable variableName="myVar" value="#[message.payloadAs(java.lang.String)]" doc:name="Variabl12313e"/>
+        <set-variable variableName="myVar" value="#[message.payloadAs(java.lang.String)]" doc:name="Variabl13e"/>
         <set-session-variable variableName="mySes" value="#[message.payloadAs(java.lang.String)]" doc:name="Session Variable"/>
         <http:request config-ref="HTTP_Request_Configuration" path="/" method="POST" doc:name="HTTP"/>
         <flow-ref name="demo-batchFlow1" doc:name="Flow Reference"/>
