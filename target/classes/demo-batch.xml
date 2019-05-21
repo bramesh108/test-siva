@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration" host="localhost" port="2020" basePath="test" doc:name="HTTP Request Configuration"/>
+    <flow name="demo-batchFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
+        <set-variable variableName="myVar" value="#[message.payloadAs(java.lang.String)]" doc:name="Variable"/>
+        <set-session-variable variableName="mySes" value="#[message.payloadAs(java.lang.String)]" doc:name="Session Variable"/>
+        <http:request config-ref="HTTP_Request_Configuration" path="/" method="POST" doc:name="HTTP"/>
+        <flow-ref name="demo-batchFlow1" doc:name="Flow Reference"/>
+    </flow>
+    <batch:job name="demo-batchBatch">
+        <batch:input>
+            <file:inbound-endpoint path="E:\FileRead" responseTimeout="10000" doc:name="File"/>
+            <dw:transform-message doc:name="Transform Message" metadata:id="3922320b-433d-404b-89bc-73f42e2929eb">
+                <dw:input-payload doc:sample="C:\Users\KELLTON\Desktop\Desctop\Report_20180715090331804.csv" mimeType="application/csv"/>
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map ((payload01 , indexOfPayload01) -> {
+	Email: payload01.Email,
+	Address: payload01.Address,
+	Name: payload01.Name,
+	Id: payload01.Id,
+	Age: payload01.Age
+})]]></dw:set-payload>
+            </dw:transform-message>
+        </batch:input>
+        <batch:process-records>
+            <batch:step name="Batch_Step">
+                <logger message="Log 1111111111 :: #[payload]" level="INFO" doc:name="Logger"/>
+                <logger message="Log 22222222222" level="INFO" doc:name="Logger"/>
+                <flow-ref name="demo-batchFlow1" doc:name="Flow Reference"/>
+                <logger message="Log 3333333333333" level="INFO" doc:name="Logger"/>
+            </batch:step>
+            <batch:step name="Batch_Step1">
+                <logger level="INFO" doc:name="Logger"/>
+                <batch:commit size="2" doc:name="Batch Commit">
+                    <logger message="&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;Commit :: #[payload]" level="INFO" doc:name="Logger"/>
+                </batch:commit>
+            </batch:step>
+        </batch:process-records>
+        <batch:on-complete>
+            <logger message="Complete Phase #[payload.failedRecords]" level="INFO" doc:name="Logger"/>
+        </batch:on-complete>
+    </batch:job>
+    <flow name="demo-batchFlow1" processingStrategy="synchronous">
+        <logger message="Here My Var is :: #[flowVars.myVar]" level="INFO" doc:name="Logger"/>
+        <logger message="My Session Var is :: #[sessionVars.mySes]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+ 
+    <choice-exception-strategy name="Global-Exception-Router">
+    
+ 		<catch-exception-strategy when="#[exception.causedBy(org.mule.api.expression.ExpressionRuntimeException)]" doc:name="400 - Expression Or Flow Execution Exception Strategy">
+            <logger message="400 Expression Error" level="INFO" doc:name="400-Logger"/>
+
+            <expression-component doc:name="400 Expression Error Log Msgs"><![CDATA[flowVars.logEventLevel='ERROR'; 
+flowVars.logMessage = 'An Expression or Flow Execution Error has occurred.';
+flowVars.logPayload = '';
+flowVars.logResponse = exception;
+flowVars.logResponseCode = 400;
+
+]]></expression-component>
+            <flow-ref name="logging-Sub_Flow" doc:name="logging-Sub_Flow"/>
+
+            <set-property propertyName="Content-Type" value="application\json" doc:name="400 Content Property"/>
+            <set-property propertyName="http.status" value="400" doc:name="400 HTTP Status Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;Expression or Flow Execution error occurred&quot; } " doc:name="Set Payload - Expression Error"/>
+        </catch-exception-strategy>
+        
+         <catch-exception-strategy when="#[exception.cause.toString().contains(' java.sql.SQLException')]" doc:name="403 - Authentication Exception Strategy">
+            <logger message="403 Authentication Error" level="INFO" doc:name="403-Logger"/>
+
+            <expression-component doc:name="403 Expression Error Log Msgs"><![CDATA[flowVars.logEventLevel = "ERROR";
+flowVars.logMessage = "SQL Authentication Error has occurred."  ;
+flowVars.logPayload = payload;
+flowVars.logResponse = exception;
+flowVars.logResponseCode = 403;
+
+]]></expression-component>
+            <flow-ref name="logging-Sub_Flow" doc:name="logging-Sub_Flow"/>
+
+            <set-property propertyName="Content-Type" value="application\json" doc:name="403 Content Property"/>
+            <set-property propertyName="http.status" value="403" doc:name="403 HTTP Status Property"/>
+            <set-payload value="{&quot;message&quot;:&quot;SQL Authentication Error&quot;}" doc:name="Set Payload - Authentication Error"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy when="#[exception.causedBy(com.mchange.v2.resourcepool.TimeoutException)]" doc:name="504-Timeout Exception Strategy">
+            <logger level="INFO" doc:name="504-Logger" message="Timeout #[exception]"/>
+
+            <expression-component doc:name="504 Timeout Error Log Msgs"><![CDATA[flowVars.logEventLevel = "ERROR";
+flowVars.logMessage ="Transaction Timed Out.";
+flowVars.logPayload = payload;
+flowVars.logResponse = exception;
+flowVars.logResponseCode = 504;
+]]></expression-component>
+            <flow-ref name="logging-Sub_Flow" doc:name="logging-Sub_Flow"/>
+
+            <set-property propertyName="Content-Type" value="application\json" doc:name="504 Content Property"/>
+            <set-property propertyName="http.status" value="504" doc:name="504 HTTP Status Property"/>
+            <set-payload value="{&quot;message&quot;:&quot;Transaction Timed Out!&quot;}" doc:name="Set Payload - Timeout Error"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy when="#[exception.cause.toString().contains('com.microsoft.sqlserver.jdbc.SQLServerException') || exception.cause.toString().contains('deadlock') || exception.cause.toString().contains('Could not find stored procedure')]" doc:name="500-SQL Exception Strategy">
+            <logger message="SQL Exception: #[exception]" level="INFO" doc:name="500-Logger"/>
+
+            <expression-component doc:name="500 SQL Exception Error Log Msgs"><![CDATA[flowVars.logEventLevel = "ERROR";
+flowVars.logMessage = "An SQL Exception has occurred.";
+flowVars.logPayload = payload;
+flowVars.logResponse =  exception;
+flowVars.logResponseCode = 500;
+
+]]></expression-component>
+            <flow-ref name="logging-Sub_Flow" doc:name="logging-Sub_Flow"/>
+
+            <set-property propertyName="Content-Type" value="application\json" doc:name="500 Content Property"/>
+            <set-property propertyName="http.status" value="500" doc:name="500  HTTP Status Property"/>
+            <set-payload value="{ &quot;message&quot;: &quot;An SQL Exception has occurred.&quot; } " doc:name="Set Payload - SQL Error"/>
+        </catch-exception-strategy>
+        
+        <catch-exception-strategy doc:name="400" when="#[exception.causedBy(org.mule.module.json.validation.JsonSchemaValidationException)]">
+            <logger message="400 -- #[exception]" level="INFO" doc:name="Logger"/>
+
+            <expression-component doc:name="Default Error Log Msgs"><![CDATA[flowVars.logEventLevel = "ERROR";
+flowVars.logMessage = "Invalid Payload"  ;
+flowVars.logPayload = payload;
+flowVars.logResponse =  exception;
+flowVars.logResponseCode = 400;
+
+]]></expression-component>
+            <flow-ref name="logging-Sub_Flow" doc:name="logging-Sub_Flow"/>
+
+            <set-property propertyName="Content-Type" value="application\json" doc:name="400 Content Property"/>
+            <set-property propertyName="http.status" value="400" doc:name="400 HTTP Status Property"/>
+            <set-payload value="{&quot;message&quot;:&quot;ONLY FIELD SUPPORTED IS DELIVERYDATE &quot;}" doc:name="Set Payload - Default Error"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="422" when="#[exception.cause.toString().contains(&quot;Invalid Date Format&quot;)]">
+            <logger message="422 -- #[exception]" level="INFO" doc:name="Logger"/>
+
+            <expression-component doc:name="Default Error Log Msgs"><![CDATA[flowVars.logEventLevel = "ERROR";
+flowVars.logMessage = "The DELIVERY DATE format is not supported."  ;
+flowVars.logPayload = payload;
+flowVars.logResponse =  exception;
+flowVars.logResponseCode = 422;
+
+]]></expression-component>
+            <flow-ref name="logging-Sub_Flow" doc:name="logging-Sub_Flow"/>
+
+            <set-property propertyName="Content-Type" value="application\json" doc:name="422 Content Property"/>
+            <set-property propertyName="http.status" value="422" doc:name="422 HTTP Status Property"/>
+            <set-payload value="{&quot;message&quot;:&quot;The DELIVERY DATE format is not supported.!&quot;}" doc:name="Set Payload - Default Error"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="Default-Catch Exception Strategy">
+            <logger message="Default -- #[exception]" level="INFO" doc:name="Logger"/>
+
+            <expression-component doc:name="Default Error Log Msgs"><![CDATA[flowVars.logEventLevel = "ERROR";
+flowVars.logMessage = "Default, unknown Error"  ;
+flowVars.logPayload = payload;
+flowVars.logResponse =  exception;
+flowVars.logResponseCode = 500;
+
+]]></expression-component>
+            <flow-ref name="logging-Sub_Flow" doc:name="logging-Sub_Flow"/>
+
+            <set-property propertyName="Content-Type" value="application\json" doc:name="500 Content Property"/>
+            <set-property propertyName="http.status" value="500" doc:name="500 HTTP Status Property"/>
+            <set-payload value="{&quot;message&quot;:&quot;Default, unknown Error!&quot;}" doc:name="Set Payload - Default Error"/>
+        </catch-exception-strategy>
+        
+        
+        
+    </choice-exception-strategy>
+ 
+ 
+</mule>
